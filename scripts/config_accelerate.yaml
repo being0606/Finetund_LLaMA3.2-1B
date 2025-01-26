@@ -1,0 +1,14 @@
+compute_environment: LOCAL_MACHINE
+deepspeed_config: {}
+distributed_type: MULTI_GPU
+fsdp_config:
+  fsdp_min_num_params: 0
+  fsdp_sharding_strategy: FULL_SHARD
+  fsdp_state_dict_type: SHARDED_STATE_DICT
+  offload_params: false
+machine_rank: 0
+main_process_ip: 127.0.0.1
+main_process_port: 6000
+max_gpus_per_machine: 2
+mixed_precision: fp16
+num_machines: 1
