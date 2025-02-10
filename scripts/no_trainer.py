@@ -39,14 +39,6 @@ def preprocess_data():
 def preprocess_function(conversations_batch, few_shot, tokenizer):
     """
     conversations_batch: 리스트, 각 원소는 하나의 예시에 해당하는 대화(turns) 리스트입니다.
-    예)
-        [
-            [ {"from": "human", "value": "안녕하세요."},
-              {"from": "gpt", "value": "안녕하세요, 무엇을 도와드릴까요?"}, ... ],
-            [ {"from": "human", "value": "오늘 날씨 어때?"},
-              {"from": "gpt", "value": "맑습니다."}, ... ],
-            ...
-        ]
     few_shot가 0보다 크면, 각 대화에서 앞 few_shot 쌍은 데모로 사용하고 마지막 쌍을 실제 입력/타깃으로 사용합니다.
     """
     all_input_ids = []
@@ -103,10 +95,11 @@ def preprocess_function(conversations_batch, few_shot, tokenizer):
 
 
 def build_dataloader(
-    dataset, split, few_shot, tokenizer, model, batch_size=8, is_train=True
+    dataset, split, few_shot, tokenizer, model, batch_size=2, is_train=True
 ):
     """
     주어진 split("train", "validation" 등)에 대해 전처리 후 DataLoader를 구성합니다.
+    배치 사이즈를 낮춰 메모리 사용량을 줄입니다.
     """
     proc_dataset = dataset[split].map(
         lambda examples: preprocess_function(
@@ -126,7 +119,15 @@ def build_dataloader(
     return dataloader
 
 
-def train_model(accelerator, model, optimizer, train_dataloader, writer, num_epochs=3):
+def train_model(
+    accelerator,
+    model,
+    optimizer,
+    train_dataloader,
+    writer,
+    num_epochs=3,
+    output_dir="models",
+):
     """
     학습 루프를 수행합니다.
     """
@@ -248,10 +249,10 @@ if __name__ == "__main__":
     model_name = "meta-llama/Llama-3.2-1B-Instruct"
     dataset_path = "data/processed/dataset"
     num_epochs = 3
-    batch_size = 4  # 작은 배치 사이즈로 실험
+    batch_size = 2  # 메모리 절감을 위해 배치 사이즈를 낮춤
 
-    # Accelerator 인스턴스 (모든 실험에 대해 하나로 사용)
-    accelerator = Accelerator()
+    # Accelerator 인스턴스: 혼합 정밀도(fp16) 사용
+    accelerator = Accelerator(mixed_precision="fp16")
 
     for exp in experiments:
         if accelerator.is_main_process:
@@ -324,6 +325,7 @@ if __name__ == "__main__":
             train_dataloader,
             writer,
             num_epochs=num_epochs,
+            output_dir=output_dir,
         )
 
         if accelerator.is_main_process:
