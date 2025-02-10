@@ -3,3 +3,4 @@ transformers
 datasets
 accelerate
 tensorboard
+peft
